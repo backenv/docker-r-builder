@@ -1,6 +1,6 @@
 FROM debian:10
 
-# Main Package installation
+# Main Packages installation
 RUN apt update && apt install -y \
   r-base \
   r-cran-devtools \
@@ -12,9 +12,19 @@ RUN apt update && apt install -y \
 # Add compilers
 # RUN apt install -y ....
 
-RUN R -q -e "install.packages('roxygen2')"
+ARG PKG_DEPS
+ARG DEB_DEPS
+
+RUN if [ ! -z "${DEB_DEPS}" ]; then \
+        apt install -y $(echo ${DEB_DEPS}); \
+    fi
+
+RUN for i in $(echo "roxygen2 ${PKG_DEPS}"); do \
+        R -q -e "install.packages('${i}')"; \
+    done
+
 RUN R -q -e "require('devtools')" && echo "R::devtools:: ready"
 
 WORKDIR /pkg
 
-CMD ["R", "-q -e require(devtools);document();check();build();build_manual()"]
+CMD ["R", "-q","-e require(devtools);document();check();build();build_manual()"]
